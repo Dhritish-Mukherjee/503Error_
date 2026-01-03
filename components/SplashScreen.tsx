@@ -5,15 +5,9 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
-  const [phase, setPhase] = useState<'VOID' | 'GLITCH'>('VOID');
+  const [phase, setPhase] = useState<'VOID' | 'GLITCH' | 'WAITING'>('VOID');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const onCompleteRef = useRef(onComplete);
-
-  // Keep the latest callback ref to handle parent re-renders without resetting the timer
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
-
+  
   useEffect(() => {
     // 0ms: VOID (Dead air)
     
@@ -22,23 +16,36 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       setPhase('GLITCH');
     }, 200);
 
-    // 1100ms: Total Sequence End
-    // Using empty dependency array [] ensures this runs exactly once on mount
-    const endTimer = setTimeout(() => {
-      if (onCompleteRef.current) {
-        onCompleteRef.current();
-      }
-    }, 1100);
+    // 1500ms: Settles to Waiting for Input
+    const waitTimer = setTimeout(() => {
+      setPhase('WAITING');
+    }, 1500);
 
     return () => {
       clearTimeout(glitchTimer);
-      clearTimeout(endTimer);
+      clearTimeout(waitTimer);
     };
   }, []); 
 
+  // Handle User Interaction to Unlock Browser APIs (Vibration/Audio)
+  const handleInteraction = () => {
+    if (phase !== 'WAITING') return;
+
+    // Trigger a micro-vibration to unlock the API
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(50);
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    onComplete();
+  };
+
   // Canvas Noise Generator (High ISO Simulation)
   useEffect(() => {
-    if (phase !== 'GLITCH') return;
+    if (phase === 'VOID') return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -83,42 +90,56 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
 
   // Render Logic
   
-  // 1. VOID: Pure Black
   if (phase === 'VOID') {
     return <div className="fixed inset-0 bg-black z-[100]" />;
   }
 
-  // 2. GLITCH: Tearing Black Mask revealing App behind + Canvas Noise overlay
   return (
-    <div className="fixed inset-0 z-[100] pointer-events-none overflow-hidden">
-      
+    <div 
+      className="fixed inset-0 z-[100] cursor-pointer overflow-hidden bg-black"
+      onClick={handleInteraction}
+    >
       {/* 
-         The Black Mask:
-         This covers the app. The 'animate-tear' uses clip-path to slice holes in this mask.
-         Where the mask is sliced (transparent), the pre-loaded Dashboard (rendered in App.tsx) 
-         is visible underneath. The SVG filter distorts the edges of the mask.
+         The Black Mask & Glitch Layers
       */}
-      <div 
-        className="absolute inset-0 bg-black animate-tear z-10" 
-        style={{ filter: 'url(#hardware-displacement)' }}
-      ></div>
+      {phase === 'GLITCH' && (
+        <>
+          <div 
+            className="absolute inset-0 bg-black animate-tear z-10" 
+            style={{ filter: 'url(#hardware-displacement)' }}
+          ></div>
+          <div 
+            className="absolute inset-0 bg-white opacity-20 animate-tear mix-blend-exclusion z-20"
+            style={{ animationDirection: 'reverse', animationDuration: '0.1s' }}
+          ></div>
+        </>
+      )}
 
       {/* 
-         Inverted Flash:
-         Occasional white full-screen flash using a reversed tear animation for contrast.
+         Waiting State UI
       */}
-      <div 
-        className="absolute inset-0 bg-white opacity-20 animate-tear mix-blend-exclusion z-20"
-        style={{ animationDirection: 'reverse', animationDuration: '0.1s' }}
-      ></div>
+      {phase === 'WAITING' && (
+        <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+          <div className="text-center">
+            <div className="text-sys-red text-xs tracking-[0.2em] font-bold animate-pulse">
+              SYSTEM_READY
+            </div>
+            <div className="mt-2 text-white text-lg font-mono tracking-tighter border border-white px-4 py-2 bg-black/50 backdrop-blur-sm">
+              [ TAP_TO_CONNECT ]
+            </div>
+            <div className="mt-1 text-[8px] text-gray-500 uppercase">
+              ALLOW_HAPTIC_FEEDBACK
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 
-         Canvas Sensor Noise:
-         Overlays everything with digital grain.
+         Canvas Sensor Noise (Always visible after VOID)
       */}
       <canvas 
         ref={canvasRef} 
-        className="absolute inset-0 z-50 opacity-50 mix-blend-overlay"
+        className="absolute inset-0 z-50 opacity-50 mix-blend-overlay pointer-events-none"
       />
       
     </div>

@@ -1,27 +1,34 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { APP_CONFIG } from '../constants';
 
 export const ConclusionScreen: React.FC = () => {
+  const [hasVibrated, setHasVibrated] = useState(false);
   
   // Urgent SOS Vibration Logic
-  useEffect(() => {
-    const vibrate = () => {
+  const triggerSOS = () => {
+    // Check for support
+    if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+
+    try {
       // Pattern: 3 Short (100ms), 3 Long (300ms), 3 Short (100ms) - SOS
       // With gaps in between
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([
-          100, 50, 100, 50, 100, 200, // S
-          300, 100, 300, 100, 300, 200, // O
-          100, 50, 100, 50, 100 // S
-        ]);
-      }
-    };
+      navigator.vibrate([
+        100, 50, 100, 50, 100, 200, // S
+        300, 100, 300, 100, 300, 200, // O
+        100, 50, 100, 50, 100 // S
+      ]);
+      setHasVibrated(true);
+    } catch (e) {
+      console.warn("Vibration blocked by user agent.");
+    }
+  };
 
-    // Start immediately
-    vibrate();
+  useEffect(() => {
+    // Attempt auto-trigger on mount
+    triggerSOS();
 
     // Repeat pattern every 2.5 seconds (approx length of pattern + pause)
-    const interval = setInterval(vibrate, 2500);
+    const interval = setInterval(triggerSOS, 2500);
 
     return () => {
       clearInterval(interval);
@@ -38,8 +45,11 @@ export const ConclusionScreen: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-white p-6 text-center">
-        <div className="max-w-md w-full border border-sys-grey p-8 relative">
+    <div 
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-white p-6 text-center"
+      onClick={triggerSOS} // Fallback: Allow user to trigger by tapping anywhere if auto-play failed
+    >
+        <div className="max-w-md w-full border border-sys-grey p-8 relative" onClick={(e) => e.stopPropagation()}>
             {/* Corners */}
             <div className="absolute top-[-1px] left-[-1px] w-4 h-4 border-t-2 border-l-2 border-sys-white"></div>
             <div className="absolute top-[-1px] right-[-1px] w-4 h-4 border-t-2 border-r-2 border-sys-white"></div>
@@ -69,6 +79,11 @@ export const ConclusionScreen: React.FC = () => {
             
             <div className="mt-4 text-[10px] text-gray-600 uppercase">
                 ERR_CODE: 503_HUMAN_NOT_FOUND
+            </div>
+            
+            {/* Mobile Helper Text if vibration likely failed */}
+            <div className="mt-8 text-[8px] text-sys-grey opacity-50 md:hidden">
+               TAP SCREEN TO SYNC HAPTICS
             </div>
         </div>
     </div>
