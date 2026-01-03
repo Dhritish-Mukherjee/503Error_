@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DataGrid } from './components/DataGrid';
 import { TerminalStream } from './components/TerminalStream';
 import { ConclusionScreen } from './components/ConclusionScreen';
@@ -9,27 +9,33 @@ import { APP_CONFIG } from './constants';
 import { AppPhase } from './types';
 
 function App() {
-  const { network, hardware, environment } = useTelemetry();
+  const { network, hardware, environment, session } = useTelemetry();
   const behavioral = useBehavioral();
   const [phase, setPhase] = useState<AppPhase>('OBSERVING');
   const [isBooting, setIsBooting] = useState(true);
   const [timeLeft, setTimeLeft] = useState(APP_CONFIG.OBSERVATION_DURATION_MS);
+  
+  // Store start time in ref so it persists across re-renders (specifically phase changes)
+  const startTimeRef = useRef<number | null>(null);
 
   // Timer Logic
   useEffect(() => {
-    // Timer starts IMMEDIATELY, regardless of boot state
-    const startTime = Date.now();
+    // Initialize start time on first run
+    if (startTimeRef.current === null) {
+      startTimeRef.current = Date.now();
+    }
     
     const timer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
+      if (!startTimeRef.current) return;
+
+      const elapsed = Date.now() - startTimeRef.current;
       const remaining = Math.max(0, APP_CONFIG.OBSERVATION_DURATION_MS - elapsed);
+      
       setTimeLeft(remaining);
 
-      if (remaining === 0 && phase === 'OBSERVING') {
-        setPhase('PURGING');
-        setTimeout(() => {
-            setPhase('DISCONNECTED');
-        }, APP_CONFIG.PURGE_DURATION_MS);
+      if (remaining <= 0 && phase === 'OBSERVING') {
+        // Immediate termination - bypass PURGING phase delay
+        setPhase('DISCONNECTED');
         clearInterval(timer);
       }
     }, 100);
@@ -80,12 +86,18 @@ function App() {
                   hardware={hardware}
                   environment={environment}
                   behavioral={behavioral}
+                  session={session}
                />
           </div>
 
           {/* Right Col: Terminal (Mobile: Bottom) */}
           <div className="flex-1 h-48 md:h-auto min-h-[200px] border-t md:border-t-0 md:border-l border-sys-grey">
-              <TerminalStream hasFocus={behavioral.hasFocus} phase={phase} />
+              <TerminalStream 
+                behavioral={behavioral}
+                hardware={hardware}
+                session={session}
+                phase={phase} 
+              />
           </div>
 
         </main>

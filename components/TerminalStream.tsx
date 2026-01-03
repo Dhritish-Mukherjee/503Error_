@@ -1,15 +1,23 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { TERMINAL_MESSAGES } from '../constants';
+import { BehavioralData, HardwareData, SessionData } from '../types';
 
 interface TerminalStreamProps {
-  hasFocus: boolean;
+  behavioral: BehavioralData;
+  hardware: HardwareData;
+  session: SessionData;
   phase: string;
 }
 
-export const TerminalStream: React.FC<TerminalStreamProps> = ({ hasFocus, phase }) => {
+export const TerminalStream: React.FC<TerminalStreamProps> = ({ behavioral, hardware, session, phase }) => {
   const [logs, setLogs] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<any>(null);
+  const hardwareLoggedRef = useRef(false);
+  const sessionLoggedRef = useRef(false);
+  
+  // Track previous states to trigger logs on change
+  const prevKineticState = useRef(behavioral.kinetics.kineticState);
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString('en-GB');
@@ -25,8 +33,8 @@ export const TerminalStream: React.FC<TerminalStreamProps> = ({ hasFocus, phase 
         index++;
       } else {
         // Random "heartbeat" logs
-        if (Math.random() > 0.7) {
-            const activities = ["Packet sniffed", "Keyframe sync", "Buffer flushed", "Idle state verified"];
+        if (Math.random() > 0.8) {
+            const activities = ["Packet sniffed", "Keyframe sync", "Buffer flushed", "Idle state verified", "Cache coherence check"];
             addLog(activities[Math.floor(Math.random() * activities.length)]);
         }
       }
@@ -37,14 +45,55 @@ export const TerminalStream: React.FC<TerminalStreamProps> = ({ hasFocus, phase 
 
   // Watch focus state
   useEffect(() => {
-    if (!hasFocus) {
+    if (!behavioral.hasFocus) {
         addLog("!! SUBJECT_LOST // FOCUS_BROKEN !!");
     } else if (logs.length > 0) {
         addLog("SUBJECT_RETURNED. RESUMING STREAM.");
     }
-  }, [hasFocus]);
+  }, [behavioral.hasFocus]);
 
-  // Auto scroll - using scrollTop prevents page jitter on mobile
+  // Watch Hardware ID
+  useEffect(() => {
+    if (hardware.model !== 'ANALYZING...' && !hardwareLoggedRef.current) {
+        addLog(`[ANALYSIS]: Hardware signature matches ${hardware.model}. Processing load optimized for this architecture.`);
+        hardwareLoggedRef.current = true;
+    }
+  }, [hardware.model]);
+
+  // Watch Database Sync
+  useEffect(() => {
+    if (session.status === 'SYNCED' && !sessionLoggedRef.current) {
+        addLog(`[DATABASE]: Handshake established. Subject_UID: ${session.fingerprint}... Saved.`);
+        if (session.visitCount > 1) {
+            addLog(`[HISTORY]: Subject recognized. Recurring visit #${session.visitCount}. Loading profile...`);
+        } else {
+            addLog(`[HISTORY]: New subject profile created.`);
+        }
+        sessionLoggedRef.current = true;
+    }
+  }, [session.status, session.fingerprint, session.visitCount]);
+
+  // Watch Kinetic State Changes
+  useEffect(() => {
+    if (prevKineticState.current !== behavioral.kinetics.kineticState) {
+        const state = behavioral.kinetics.kineticState;
+        
+        if (state === 'AGITATED') {
+            addLog("[KINETICS]: High-frequency jitter detected. Subject exhibiting signs of nervousness or tremor.");
+        } else if (state === 'LOCOMOTION') {
+            addLog("[KINETICS]: Rhythmic oscillation detected. Subject is in transit.");
+        } else if (state === 'SEDENTARY') {
+            addLog("[KINETICS]: Movement ceased. Subject has achieved a state of physical stasis.");
+        }
+        
+        // Log posture update on kinetic change
+        addLog(`[SPATIAL]: Recalibrating... State: ${behavioral.kinetics.postureReport}`);
+
+        prevKineticState.current = state;
+    }
+  }, [behavioral.kinetics.kineticState, behavioral.kinetics.postureReport]);
+
+  // Auto scroll
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;

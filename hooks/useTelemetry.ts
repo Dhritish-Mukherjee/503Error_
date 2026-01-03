@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { NetworkData, HardwareData, EnvironmentalData } from '../types';
+import { NetworkData, HardwareData, EnvironmentalData, SessionData } from '../types';
 import { DEFAULT_NETWORK_DATA } from '../constants';
 import { getGpuRenderer } from '../utils/webgl';
+import { detectDeviceModel } from '../utils/device';
 import { getMoonPhase, getSolarStatus } from '../utils/astronomy';
+import { generateFingerprint } from '../utils/fingerprint';
 
 export const useTelemetry = () => {
   const [network, setNetwork] = useState<NetworkData>(DEFAULT_NETWORK_DATA);
@@ -12,12 +14,20 @@ export const useTelemetry = () => {
     memory: 0,
     platform: 'UNKNOWN',
     screenRes: '0x0',
+    model: 'ANALYZING...',
   });
   const [environment, setEnvironment] = useState<EnvironmentalData>({
     moonPhase: 'CALCULATING...',
     weatherStatus: 'AWAITING_COORDS',
     localTime: new Date().toISOString(),
   });
+  const [session, setSession] = useState<SessionData>({
+    fingerprint: 'GENERATING...',
+    visitCount: 0,
+    status: 'CONNECTING'
+  });
+
+  const hasSyncedRef = useRef(false);
 
   // Clock Update
   useEffect(() => {
@@ -33,12 +43,16 @@ export const useTelemetry = () => {
   // Hardware Fetch (Immediate)
   useEffect(() => {
     const nav = navigator as any;
+    const gpuRenderer = getGpuRenderer();
+    const model = detectDeviceModel(gpuRenderer);
+
     setHardware({
-      gpu: getGpuRenderer(),
+      gpu: gpuRenderer,
       cores: nav.hardwareConcurrency || 1,
       memory: nav.deviceMemory ? `${nav.deviceMemory} GB` : 'UNAVAILABLE',
       platform: nav.platform || 'UNKNOWN_ARCH',
-      screenRes: `${window.screen.width}x${window.screen.height}`
+      screenRes: `${window.screen.width}x${window.screen.height}`,
+      model: model,
     });
   }, []);
 
@@ -93,5 +107,51 @@ export const useTelemetry = () => {
     fetchData();
   }, []);
 
-  return { network, hardware, environment };
+  // Backend Sync
+  useEffect(() => {
+    // Only sync if we have valid data and haven't synced yet
+    if (
+      !hasSyncedRef.current &&
+      network.ip !== 'SEARCHING...' &&
+      hardware.model !== 'ANALYZING...'
+    ) {
+      const syncTelemetry = async () => {
+        hasSyncedRef.current = true;
+        
+        // Generate Fingerprint
+        const fingerprint = generateFingerprint(hardware);
+        setSession(prev => ({ ...prev, fingerprint }));
+
+        try {
+          const response = await fetch('http://localhost:3000/api/telemetry', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fingerprint,
+              network,
+              hardware
+            })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setSession({
+              fingerprint: fingerprint,
+              visitCount: data.visitCount,
+              status: 'SYNCED'
+            });
+          } else {
+            setSession(prev => ({ ...prev, status: 'OFFLINE' }));
+          }
+        } catch (e) {
+          console.warn("Backend unavailable - running in standalone mode.");
+          setSession(prev => ({ ...prev, status: 'OFFLINE' }));
+        }
+      };
+
+      syncTelemetry();
+    }
+  }, [network.ip, hardware.model]);
+
+  return { network, hardware, environment, session };
 };
