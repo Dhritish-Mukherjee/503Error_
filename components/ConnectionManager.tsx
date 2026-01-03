@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 
 interface Props {
-  onSuccess: () => void;
+  onSuccess: (stream: MediaStream) => void;
   onFailure: () => void;
 }
 
@@ -17,20 +17,33 @@ const ConnectionManager: React.FC<Props> = ({ onSuccess, onFailure }) => {
     try {
       // 1. Motion Sensors
       if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-        const permission = await (DeviceOrientationEvent as any).requestPermission();
-        if (permission !== 'granted') throw new Error("Motion Denied");
+        try {
+          const permission = await (DeviceOrientationEvent as any).requestPermission();
+          if (permission !== 'granted') throw new Error("Motion Denied");
+        } catch (e) {
+          console.debug("Motion permission skipped or denied");
+        }
       }
 
       setStatus("SCANNING_SUBJECT_PRESENCE...");
       
-      // 2. Camera
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      // 2. Camera Access
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("MediaDevices not supported");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' },
+        audio: false 
+      });
+      
       if (stream) {
-        // We'll keep the stream and use it in Dashboard
-        onSuccess();
+        onSuccess(stream);
+      } else {
+        throw new Error("No stream returned");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Connection stabilization failed:", err);
       onFailure();
     }
   };

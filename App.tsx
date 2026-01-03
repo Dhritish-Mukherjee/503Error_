@@ -7,11 +7,13 @@ import MonitoringDashboard from './components/MonitoringDashboard';
 import RedFailure from './components/RedFailure';
 import ShatterScreen from './components/ShatterScreen';
 import SystemPopups from './components/SystemPopups';
+import BiometricHold from './components/BiometricHold';
 
 const App: React.FC = () => {
   const [stage, setStage] = useState<AppStage>(AppStage.BOOT);
   const [touches, setTouches] = useState<TouchPoint[]>([]);
   const [currentTouch, setCurrentTouch] = useState<{x: number, y: number} | null>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [hardware, setHardware] = useState<HardwareInfo>({
     ram: 'Unknown',
     battery: 'Unknown',
@@ -25,15 +27,26 @@ const App: React.FC = () => {
 
   // Capture Hardware & Browser Info
   useEffect(() => {
-    const updateStats = () => {
-      // @ts-ignore - navigator.deviceMemory is not in standard types but exists in Chrome
+    const updateStats = async () => {
+      // @ts-ignore
       const ram = navigator.deviceMemory || '4+';
-      const isp = 'Comcast/Xfinity Restricted Node'; // Mocking or could fetch
+      const isp = 'Comcast/Xfinity Restricted Node';
+      
+      let battery: number | string = 'Unknown';
+      if ('getBattery' in navigator) {
+        try {
+          const b = await (navigator as any).getBattery();
+          battery = b.level;
+        } catch (e) {
+          console.debug("Battery API not supported or blocked");
+        }
+      }
       
       setHardware(prev => ({
         ...prev,
         ram,
         isp,
+        battery,
         timeOnSite: Math.floor((Date.now() - startTimeRef.current) / 1000)
       }));
     };
@@ -60,9 +73,14 @@ const App: React.FC = () => {
     }, 1500);
   }, []);
 
-  const handleStageTransition = (next: AppStage) => {
-    setStage(next);
-  };
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [mediaStream]);
 
   return (
     <div 
@@ -77,6 +95,7 @@ const App: React.FC = () => {
           touches={touches} 
           currentTouch={currentTouch}
           hardware={hardware}
+          stream={mediaStream}
           onShatter={() => setStage(AppStage.SHATTERED)}
         />
       </div>
@@ -87,9 +106,16 @@ const App: React.FC = () => {
 
       {stage === AppStage.CONNECTION && (
         <ConnectionManager 
-          onSuccess={() => setStage(AppStage.ACTIVE)} 
+          onSuccess={(stream) => {
+            setMediaStream(stream);
+            setStage(AppStage.STABILIZING);
+          }} 
           onFailure={() => setStage(AppStage.FAILURE)}
         />
+      )}
+
+      {stage === AppStage.STABILIZING && (
+        <BiometricHold onVerified={() => setStage(AppStage.ACTIVE)} />
       )}
 
       {stage === AppStage.FAILURE && (
@@ -101,7 +127,7 @@ const App: React.FC = () => {
       )}
 
       {/* Overlays */}
-      <SystemPopups stage={stage} onFlash={triggerBrightnessAttack} />
+      <SystemPopups stage={stage} hardware={hardware} onFlash={triggerBrightnessAttack} />
 
       {/* Brightness Attack */}
       {showBrightnessAttack && (

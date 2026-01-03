@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppStage } from '../types';
+import { AppStage, HardwareInfo } from '../types';
 
 interface Props {
   stage: AppStage;
+  hardware: HardwareInfo;
   onFlash: () => void;
 }
 
-const SystemPopups: React.FC<Props> = ({ stage, onFlash }) => {
+const SystemPopups: React.FC<Props> = ({ stage, hardware, onFlash }) => {
   const [showBattery, setShowBattery] = useState(false);
-  const [vibrateInterval, setVibrateInterval] = useState<number | null>(null);
 
   useEffect(() => {
     if (stage !== AppStage.ACTIVE) return;
@@ -21,25 +21,32 @@ const SystemPopups: React.FC<Props> = ({ stage, onFlash }) => {
 
     // Random Brightness Attacks
     const brightnessTimer = setInterval(() => {
-      if (Math.random() > 0.8) {
+      if (Math.random() > 0.85) {
         onFlash();
       }
-    }, 10000);
-
-    // Heartbeat Vibration (Android Only)
-    if ("vibrate" in navigator) {
-      const vInterval = window.setInterval(() => {
-        navigator.vibrate([100, 30, 100]);
-      }, 2000);
-      setVibrateInterval(vInterval);
-    }
+    }, 12000);
 
     return () => {
       clearTimeout(batteryTimer);
       clearInterval(brightnessTimer);
-      if (vibrateInterval) clearInterval(vibrateInterval);
     };
   }, [stage, onFlash]);
+
+  // Heartbeat Vibration Logic
+  useEffect(() => {
+    if (stage !== AppStage.ACTIVE || !("vibrate" in navigator)) return;
+
+    const progress = Math.min((hardware.timeOnSite / 120), 1);
+    // Base frequency: 2000ms. End frequency: 400ms.
+    const intervalTime = 2000 - (progress * 1600);
+
+    const vInterval = window.setInterval(() => {
+      // Heartbeat double thump: [duration, pause, duration]
+      navigator.vibrate([70, 40, 70]);
+    }, Math.max(intervalTime, 300));
+
+    return () => clearInterval(vInterval);
+  }, [stage, hardware.timeOnSite]);
 
   if (!showBattery) return null;
 
@@ -59,7 +66,7 @@ const SystemPopups: React.FC<Props> = ({ stage, onFlash }) => {
           </button>
         </div>
         <div className="px-4 pb-4 text-[10px] text-center text-red-500 font-mono italic">
-          "I'll let you go when the power dies."
+          "Your device is dying. I am the last thing you will see."
         </div>
       </div>
     </div>
