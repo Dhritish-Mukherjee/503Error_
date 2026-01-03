@@ -1,65 +1,124 @@
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SYSTEM_STATUS: COMPROMISED</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>CLINICAL_OBSERVER // v1.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
+            colors: {
+              'sys-black': '#000000',
+              'sys-white': '#FFFFFF',
+              'sys-grey': '#222222',
+              'sys-red': '#FF0000',
+            },
+            animation: {
+              'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'glitch': 'glitch 0.2s linear infinite',
+              'tear': 'tear 0.15s infinite',
+              'rgb': 'rgb-shift 0.1s infinite',
+            },
+            keyframes: {
+              glitch: {
+                '0%': { transform: 'translate(0)' },
+                '20%': { transform: 'translate(-2px, 2px)' },
+                '40%': { transform: 'translate(-2px, -2px)' },
+                '60%': { transform: 'translate(2px, 2px)' },
+                '80%': { transform: 'translate(2px, -2px)' },
+                '100%': { transform: 'translate(0)' },
+              },
+              tear: {
+                '0%': { clipPath: 'inset(0 0 0 0)' },
+                '10%': { clipPath: 'inset(40% 0 20% 0)' },
+                '20%': { clipPath: 'inset(10% 0 80% 0)' },
+                '30%': { clipPath: 'inset(80% 0 5% 0)' },
+                '40%': { clipPath: 'inset(0 0 0 0)' },
+                '50%': { clipPath: 'inset(30% 0 30% 0)' },
+                '60%': { clipPath: 'inset(10% 0 60% 0)' },
+                '70%': { clipPath: 'inset(70% 0 10% 0)' },
+                '80%': { clipPath: 'inset(20% 0 50% 0)' },
+                '90%': { clipPath: 'inset(50% 0 10% 0)' },
+                '100%': { clipPath: 'inset(0 0 0 0)' },
+              },
+              'rgb-shift': {
+                 '0%': { textShadow: '-2px 0 #ff0000, 2px 0 #00ffff' },
+                 '25%': { textShadow: '2px 0 #ff0000, -2px 0 #00ffff' },
+                 '50%': { textShadow: '-2px 0 #00ff00, 2px 0 #ff00ff' },
+                 '75%': { textShadow: '2px 0 #00ff00, -2px 0 #ff00ff' },
+                 '100%': { textShadow: '-2px 0 #ff0000, 2px 0 #00ffff' },
+              }
+            }
+          },
+        },
+      }
+    </script>
     <style>
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background: black;
-            color: white;
-            overflow: hidden;
-            margin: 0;
-            cursor: none;
-        }
-        @keyframes flicker {
-            0% { opacity: 0.8; }
-            5% { opacity: 0.1; }
-            10% { opacity: 1; }
-            15% { opacity: 0.4; }
-            20% { opacity: 1; }
-            100% { opacity: 1; }
-        }
-        .flicker {
-            animation: flicker 0.2s infinite;
-        }
-        @keyframes heartbeat {
-            0% { transform: scale(1); }
-            5% { transform: scale(1.02); }
-            10% { transform: scale(1); }
-            15% { transform: scale(1.01); }
-            50% { transform: scale(1); }
-        }
-        .heartbeat {
-            animation: heartbeat 2s infinite ease-in-out;
-        }
-        .mix-diff {
-            mix-blend-mode: difference;
-        }
-        .scanline {
-            background: linear-gradient(
-                to bottom,
-                rgba(18, 16, 16, 0) 50%,
-                rgba(0, 0, 0, 0.25) 50%
-            );
-            background-size: 100% 4px;
-            pointer-events: none;
-        }
-        .glitch-bg {
-            background: repeating-linear-gradient(
-                45deg,
-                #000,
-                #000 10px,
-                #111 10px,
-                #111 20px
-            );
-        }
+      body {
+        background-color: #000;
+        color: #FFF;
+        overflow-x: hidden;
+        overscroll-behavior: none;
+      }
+      
+      /* CRT Scanline Effect */
+      .scanlines::before {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0),
+          rgba(255, 255, 255, 0) 50%,
+          rgba(0, 0, 0, 0.2) 50%,
+          rgba(0, 0, 0, 0.2)
+        );
+        background-size: 100% 4px;
+        z-index: 50;
+        pointer-events: none;
+      }
+
+      /* Noise Texture */
+      .noise::after {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.05;
+        pointer-events: none;
+        z-index: 49;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #000; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #333; 
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555; 
+      }
     </style>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
@@ -70,8 +129,18 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-<body>
+  <body class="font-mono text-sm antialiased scanlines noise">
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <!-- Hardware Glitch Filters -->
+    <svg style="display: none;">
+      <defs>
+        <filter id="hardware-displacement">
+          <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" result="warp" />
+          <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 30 -15" in="warp" result="contrastWarp" />
+          <feDisplacementMap xChannelSelector="R" yChannelSelector="G" scale="40" in="SourceGraphic" in2="contrastWarp" />
+        </filter>
+      </defs>
+    </svg>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>

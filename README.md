@@ -1,20 +1,38 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Clinical Observer // Protocol v1.0
 
-# Run and deploy your AI Studio app
+A high-end diagnostic tool with a Digital Brutalism aesthetic that passively observes user telemetry.
 
-This contains everything you need to run your app locally.
+## // DATA_SOURCES & API_ENDPOINTS
 
-View your app in AI Studio: https://ai.studio/apps/drive/17YkuQSe5eq8e2mly1PsI0ZoEjIc8raJy
+This application aggregates data from the following external and internal interfaces:
 
-## Run Locally
+### External REST APIs
+1. **[ipwho.is](https://ipwho.is/)**
+   - **Purpose**: Network Topology & Geolocation.
+   - **Data Points**: IP Address, ISP, ASN, City, Country, Latitude/Longitude, Timezone, Currency.
+   - **Usage**: Used to triangulate the subject's physical location and network identity without requiring explicit permission.
 
-**Prerequisites:**  Node.js
+2. **[Open-Meteo](https://open-meteo.com/)**
+   - **Purpose**: Environmental Analysis.
+   - **Data Points**: Weather Code (WMO), Temperature.
+   - **Usage**: Correlates the subject's coordinates with local atmospheric conditions to assess environmental state.
 
+### Browser/Device APIs
+1. **WebGL API (`WEBGL_debug_renderer_info`)**
+   - **Purpose**: Hardware Fingerprinting.
+   - **Usage**: Extracts the unmasked GPU renderer and vendor strings to identify the graphics processing unit.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+2. **Navigator API (`navigator.hardwareConcurrency`, `navigator.deviceMemory`)**
+   - **Purpose**: System Profiling.
+   - **Usage**: determines CPU logic core count and available RAM (where supported) to estimate computing power.
+
+3. **Device Orientation API**
+   - **Purpose**: Behavioral Telemetry.
+   - **Usage**: Captures real-time gyroscopic data (Alpha, Beta, Gamma rotation) to track device movement and handling patterns.
+
+4. **Touch & Pointer Events**
+   - **Purpose**: Biometric Interaction.
+   - **Usage**: Calculates input velocity and contact radius to analyze motor function and engagement levels.
+
+---
+*ERR_CODE: 503_HUMAN_NOT_FOUND*

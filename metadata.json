@@ -1,7 +1,5 @@
 {
-  "name": "Clinical Hostility - System Hijack",
-  "description": "A malicious-takeover-themed interactive experience focusing on clinical hostility, aggressive permissions, and intrusive device monitoring.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "name": "Clinical Observer",
+  "description": "A high-end diagnostic tool with a Digital Brutalism aesthetic that passively observes user telemetry.",
+  "requestFramePermissions": []
 }
