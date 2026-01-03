@@ -1,10 +1,7 @@
-
 {
-  "name": "IDGAF-HOSTILE-ENTITY",
-  "description": "A brutalist mobile diagnostic interface that simulates a system hijacking and aggressive data extraction.",
+  "name": "Clinical Hostility - System Hijack",
+  "description": "A malicious-takeover-themed interactive experience focusing on clinical hostility, aggressive permissions, and intrusive device monitoring.",
   "requestFramePermissions": [
-    "camera",
-    "microphone",
-    "geolocation"
+    "camera"
   ]
 }
