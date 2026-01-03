@@ -8,7 +8,7 @@ interface TerminalStreamProps {
 
 export const TerminalStream: React.FC<TerminalStreamProps> = ({ hasFocus, phase }) => {
   const [logs, setLogs] = useState<string[]>([]);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<any>(null);
 
   const addLog = (msg: string) => {
@@ -44,9 +44,11 @@ export const TerminalStream: React.FC<TerminalStreamProps> = ({ hasFocus, phase 
     }
   }, [hasFocus]);
 
-  // Auto scroll
+  // Auto scroll - using scrollTop prevents page jitter on mobile
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [logs]);
 
   if (phase === 'DISCONNECTED') return null;
@@ -54,13 +56,15 @@ export const TerminalStream: React.FC<TerminalStreamProps> = ({ hasFocus, phase 
   return (
     <div className="border border-sys-grey bg-black p-4 h-full flex flex-col font-mono text-xs overflow-hidden relative">
       <div className="absolute top-2 right-2 text-sys-grey opacity-50">LOG://sys_kernel</div>
-      <div className="flex-1 overflow-y-auto space-y-1 scrollbar-hide">
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto space-y-1 scrollbar-hide"
+      >
         {logs.map((log, i) => (
           <div key={i} className="text-gray-400 border-l-2 border-transparent hover:border-sys-white pl-2 transition-all">
             <span className="opacity-50 mr-2">{'>'}</span>{log}
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
     </div>
   );

@@ -1,7 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { APP_CONFIG } from '../constants';
 
 export const ConclusionScreen: React.FC = () => {
+  
+  // Urgent SOS Vibration Logic
+  useEffect(() => {
+    const vibrate = () => {
+      // Pattern: 3 Short (100ms), 3 Long (300ms), 3 Short (100ms) - SOS
+      // With gaps in between
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([
+          100, 50, 100, 50, 100, 200, // S
+          300, 100, 300, 100, 300, 200, // O
+          100, 50, 100, 50, 100 // S
+        ]);
+      }
+    };
+
+    // Start immediately
+    vibrate();
+
+    // Repeat pattern every 2.5 seconds (approx length of pattern + pause)
+    const interval = setInterval(vibrate, 2500);
+
+    return () => {
+      clearInterval(interval);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(0);
+      }
+    };
+  }, []);
+
+  const handleExit = () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black text-white p-6 text-center">
         <div className="max-w-md w-full border border-sys-grey p-8 relative">
@@ -26,6 +61,7 @@ export const ConclusionScreen: React.FC = () => {
                 href={APP_CONFIG.INSTAGRAM_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleExit}
                 className="block w-full bg-sys-white text-sys-black font-bold py-3 px-4 hover:bg-gray-200 transition-colors uppercase text-sm tracking-wider"
             >
                 [ SYSTEM_EXIT / {APP_CONFIG.INSTAGRAM_HANDLE} ]
