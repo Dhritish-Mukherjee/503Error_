@@ -1,0 +1,10 @@
+
+{
+  "name": "IDGAF-HOSTILE-ENTITY",
+  "description": "A brutalist mobile diagnostic interface that simulates a system hijacking and aggressive data extraction.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
